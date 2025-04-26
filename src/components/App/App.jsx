@@ -1,41 +1,48 @@
-import ContactList from "../ContactList/ContactList";
-import SearchBox from "../SearchBox/SearchBox";
-import ContactForm from "../ContactForm/ContactForm";
+import { Route, Routes } from "react-router";
+import HomePage from "../../pages/HomePage/HomePage";
+import AppBar from "../AppBar/AppBar";
+import RegisterPage from "../../pages/RegistrPage/RegistrPage";
+import LoginPage from "../../pages/LoginPage/LoginPage";
+import ContactPage from "../../pages/ContactsPage/ContactsPage";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchContacts } from "../../redux/contactsOps";
-import {
-  selectContacts,
-  selectIsError,
-  selectIsLoading,
-} from "../../redux/contactsSlice";
-import { useEffect } from "react";
-import Loader from "../Loader/Loader";
-import Error from "../Error/Error";
+import { Suspense, useEffect } from "react";
+import { refreshUser } from "../../redux/auth/operations";
+import { selectIsRefreshing } from "../../redux/auth/selectors";
+import RestrictedRoute from "../RestrictedRoutes/RestrictedRoutes";
+import PrivateRoute from "../PrivateRoute/PrivateRoute";
 
 function App() {
   const dispatch = useDispatch();
-  const contacts = useSelector(selectContacts);
-  const isLoading = useSelector(selectIsLoading);
-  const isError = useSelector(selectIsError);
+  const isRefresh = useSelector(selectIsRefreshing);
 
   useEffect(() => {
-    dispatch(fetchContacts());
+    dispatch(refreshUser());
   }, [dispatch]);
 
-  return (
-    <div>
-      <h1>Phonebook</h1>
+  return isRefresh ? (
+    <b>Getting user data please wait...</b>
+  ) : (
+    <Suspense fallback={null}>
+      <AppBar />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
-      <ContactForm />
+        <Route
+          path="/login"
+          element={
+            <RestrictedRoute component={<LoginPage />} redirectTo="/contacts" />
+          }
+        />
 
-      <SearchBox />
-
-      {isLoading && <Loader>Loading message</Loader>}
-
-      {isError && <Error>Error message</Error>}
-
-      {contacts.length > 0 && <ContactList />}
-    </div>
+        <Route
+          path="/contacts"
+          element={
+            <PrivateRoute component={<ContactPage />} redirectTo="/login" />
+          }
+        />
+      </Routes>
+    </Suspense>
   );
 }
 
